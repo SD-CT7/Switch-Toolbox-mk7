@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -93,6 +93,16 @@ namespace LayoutBXLYT.CTR
                 }
             }
             return true;
+        }
+
+        public override void AddTexture(string texture)
+        {
+            int index = ParentLayout.AddTexture(texture);
+            TextureRef textureRef = new TextureRef();
+            textureRef.ID = (short)index;
+            textureRef.Name = texture;
+            TextureMaps = TextureMaps.AddToArray(textureRef);
+            TextureTransforms = TextureTransforms.AddToArray(new BxlytTextureTransform());
         }
 
         public Material()
