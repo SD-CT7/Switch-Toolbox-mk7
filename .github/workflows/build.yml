@@ -1,0 +1,25 @@
+name: Build Toolbox
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore Toolbox.sln
+
+      - name: Build (Release)
+        run: msbuild Toolbox.sln /p:Configuration=Release /p:Platform="Any CPU" /m
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Toolbox-Release
+          path: Toolbox/bin/Release
