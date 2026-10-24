@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -97,12 +97,10 @@ namespace LayoutBXLYT
             {
                 var pic1Pane = pane as CTR.PIC1;
 
-                Color[] Colors = new Color[] {
-                    pic1Pane.ColorBottomLeft.Color,
-                    pic1Pane.ColorBottomRight.Color,
-                    pic1Pane.ColorTopRight.Color,
-                    pic1Pane.ColorTopLeft.Color,
-                };
+                //Apply animated vertex colors (BCLAN CLVC) on a copy so the pane data is not modified
+                Color[] Colors = ApplyAnimatedVertexColors(pane,
+                    pic1Pane.ColorBottomLeft, pic1Pane.ColorBottomRight,
+                    pic1Pane.ColorTopRight, pic1Pane.ColorTopLeft);
 
                 var mat = pic1Pane.Material as CTR.Material;
 
@@ -1536,6 +1534,51 @@ namespace LayoutBXLYT
             Green = All.Green,
             Blue = All.Blue,
             Alpha = All.Alpha,
+        }
+
+        //Returns the 4 corner colors (bottom left, bottom right, top right, top left)
+        //with animated vertex colors applied. Works on copies, the originals are untouched.
+        private static Color[] ApplyAnimatedVertexColors(BasePane pane,
+            STColor8 bottomLeft, STColor8 bottomRight, STColor8 topRight, STColor8 topLeft)
+        {
+            STColor8[] source = new STColor8[] { bottomLeft, bottomRight, topRight, topLeft };
+
+            //[corner, channel] channel: 0 = R, 1 = G, 2 = B, 3 = A
+            int[,] values = new int[4, 4];
+            for (int i = 0; i < 4; i++)
+            {
+                values[i, 0] = source[i].R;
+                values[i, 1] = source[i].G;
+                values[i, 2] = source[i].B;
+                values[i, 3] = source[i].A;
+            }
+
+            if (pane.animController != null)
+            {
+                foreach (var animItem in pane.animController.PaneVertexColors)
+                {
+                    int target = (int)animItem.Key;
+                    if (target > (int)LVCTarget.RightBottomAlpha)
+                        continue; //PaneAlpha is handled by the viewer
+
+                    //Targets go in groups of 4 (R,G,B,A): left top, right top, left bottom, right bottom
+                    int channel = target % 4;
+                    int corner;
+                    switch (target / 4)
+                    {
+                        case 0: corner = 3; break; //top left
+                        case 1: corner = 2; break; //top right
+                        case 2: corner = 0; break; //bottom left
+                        default: corner = 1; break; //bottom right
+                    }
+                    values[corner, channel] = Math.Max(0, Math.Min(255, (int)Math.Round(animItem.Value)));
+                }
+            }
+
+            Color[] colors = new Color[4];
+            for (int i = 0; i < 4; i++)
+                colors[i] = Color.FromArgb(values[i, 3], values[i, 0], values[i, 1], values[i, 2]);
+            return colors;
         }
 
         private static STColor8[] SetupVertexColors(BasePane pane,
