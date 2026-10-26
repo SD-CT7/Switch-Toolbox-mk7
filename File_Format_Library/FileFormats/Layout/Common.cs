@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -1747,7 +1747,7 @@ namespace LayoutBXLYT
                         for (int e = 0; e < numEntries; e++)
                         {
                             reader.SeekBegin(pos + entryOffsets[e]);
-                            if (signature == "RLAN")
+                            if (signature == "RLAN" || signature == "CLAN") //RLAN and CLAN (3DS) use 0x14 byte names
                             {
                                 string name = reader.ReadString(0x14, true);
                                 if (EntryNames.Contains(name))
