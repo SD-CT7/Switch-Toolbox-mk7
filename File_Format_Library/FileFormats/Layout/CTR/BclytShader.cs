@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
@@ -41,9 +41,11 @@ namespace LayoutBXLYT
 
         public static void SetMaterials(BxlytShader shader, CTR.Material material, BasePane pane, Dictionary<string, STGenericTexture> textures)
         {
-            Matrix4 rotationX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(pane.Rotate.X));
-            Matrix4 rotationY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(pane.Rotate.Y));
-            Matrix4 rotationZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(pane.Rotate.Z));
+            //Use the animated rotation (RotateX/Y/Z from BCLAN) if there is one
+            var paneRotate = pane.GetRotation();
+            Matrix4 rotationX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(paneRotate.X));
+            Matrix4 rotationY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(paneRotate.Y));
+            Matrix4 rotationZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(paneRotate.Z));
             var rotationMatrix = rotationX * rotationY * rotationZ;
 
             shader.SetMatrix("rotationMatrix", ref rotationMatrix);
