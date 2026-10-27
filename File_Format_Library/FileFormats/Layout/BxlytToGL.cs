@@ -104,8 +104,16 @@ namespace LayoutBXLYT
 
                 var mat = pic1Pane.Material as CTR.Material;
 
-                ShaderLoader.CtrShader.Enable();
-                BclytShader.SetMaterials(ShaderLoader.CtrShader, (CTR.Material)mat, pane, Textures);
+                //Materials with TEV stages (combiners) use a shader built from those stages
+                BxlytShader ctrShader = ShaderLoader.CtrShader;
+                BclytTevShader tevShader = BclytTevShader.Get(mat);
+                if (tevShader != null)
+                    ctrShader = tevShader;
+
+                ctrShader.Enable();
+                BclytShader.SetMaterials(ctrShader, (CTR.Material)mat, pane, Textures);
+                if (tevShader != null)
+                    tevShader.SetTevUniforms(mat);
 
                 if (pic1Pane.TexCoords.Length > 0)
                 {
