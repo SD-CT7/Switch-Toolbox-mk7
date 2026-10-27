@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -49,6 +49,7 @@ namespace LayoutBXLYT.CTR
         {
             writer.Write(flags1);
             writer.Write(flags2);
+            writer.Write(ConstColors); //was missing: the reader consumes 12 bytes per TEV stage
         }
     }
 }
