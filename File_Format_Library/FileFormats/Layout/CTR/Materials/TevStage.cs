@@ -47,9 +47,25 @@ namespace LayoutBXLYT.CTR
 
         public void Write(FileWriter writer)
         {
+            //Rebuild the flags from the properties so changes made in the combiner editor are saved.
+            //Bit 31 is unknown so the original value is kept.
+            if (ColorSources != null && ColorOperators != null && AlphaSources != null && AlphaOperators != null &&
+                ColorSources.Length == 3 && ColorOperators.Length == 3 && AlphaSources.Length == 3 && AlphaOperators.Length == 3)
+            {
+                flags1 = (flags1 & 0x80000000) |
+                    ((uint)ColorSources[0] & 0xF) | (((uint)ColorSources[1] & 0xF) << 4) | (((uint)ColorSources[2] & 0xF) << 8) |
+                    (((uint)ColorOperators[0] & 0xF) << 12) | (((uint)ColorOperators[1] & 0xF) << 16) | (((uint)ColorOperators[2] & 0xF) << 20) |
+                    (((uint)ColorMode & 0xF) << 24) | (((uint)ColorScale & 0x3) << 28) | ((ColorSavePrevReg ? 1u : 0u) << 30);
+
+                flags2 = (flags2 & 0x80000000) |
+                    ((uint)AlphaSources[0] & 0xF) | (((uint)AlphaSources[1] & 0xF) << 4) | (((uint)AlphaSources[2] & 0xF) << 8) |
+                    (((uint)AlphaOperators[0] & 0xF) << 12) | (((uint)AlphaOperators[1] & 0xF) << 16) | (((uint)AlphaOperators[2] & 0xF) << 20) |
+                    (((uint)AlphaMode & 0xF) << 24) | (((uint)AlphaScale & 0x3) << 28) | ((AlphaSavePrevReg ? 1u : 0u) << 30);
+            }
+
             writer.Write(flags1);
             writer.Write(flags2);
-            writer.Write(ConstColors); //was missing: the reader consumes 12 bytes per TEV stage
+            writer.Write(ConstColors); //the reader consumes 12 bytes per TEV stage
         }
     }
 }
