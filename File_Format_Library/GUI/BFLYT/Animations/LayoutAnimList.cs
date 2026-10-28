@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -72,8 +72,24 @@ namespace LayoutBXLYT
             isLoaded = true;
         }
 
+        //Finds an animation that is already in the list (by file name)
+        private ListViewItem FindAnimationItem(string fileName)
+        {
+            string name = System.IO.Path.GetFileName(fileName);
+            foreach (ListViewItem item in listView1.Items)
+            {
+                if (item.Text == name)
+                    return item;
+            }
+            return null;
+        }
+
         public void LoadAnimation(ArchiveFileInfo archiveEntry)
         {
+            //Do not list the same file twice (the layout can be loaded more than once)
+            if (FindAnimationItem(archiveEntry.FileName) != null)
+                return;
+
             listView1.Items.Add(new ListViewItem(System.IO.Path.GetFileName(archiveEntry.FileName))
             {
                 Tag = archiveEntry,
@@ -85,6 +101,14 @@ namespace LayoutBXLYT
         {
             if (bxlan == null)
                 return;
+
+            //Already listed (from the archive). Use the opened animation instead of adding the file again
+            var existing = FindAnimationItem(bxlan.FileName);
+            if (existing != null)
+            {
+                existing.Tag = bxlan;
+                return;
+            }
 
             isLoaded = false;
             listView1.BeginUpdate();
