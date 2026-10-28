@@ -168,7 +168,7 @@ namespace LayoutBXLYT
                         rotate = transform.Rotate;
                         translate = transform.Translate;
 
-                        foreach (var animItem in material.animController.TextureSRTS)
+                        foreach (var animItem in material.animController.GetTextureSRTS(i))
                         {
                             switch (animItem.Key)
                             {
