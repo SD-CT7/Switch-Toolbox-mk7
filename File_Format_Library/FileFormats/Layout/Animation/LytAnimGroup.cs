@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -80,6 +80,29 @@ namespace LayoutBXLYT
             {
                 STAnimGroup group = new STAnimGroup();
                 string tag = entry.Tags[i].Tag.Remove(0,1);
+
+                //Texture SRT entries store which texture map they animate.
+                //Keep one group per texture map so each map is animated on its own.
+                if (tag == "LTS")
+                {
+                    var mapIndices = entry.Tags[i].Entries.Select(x => (int)x.Index).Distinct().OrderBy(x => x).ToList();
+                    if (mapIndices.Count == 0)
+                        mapIndices.Add(0);
+
+                    foreach (int mapIndex in mapIndices)
+                    {
+                        var srtGroup = new LytTextureSRTGroup(entry.Tags[i]);
+                        srtGroup.MapIndex = mapIndex;
+                        LoadKeyGroups(srtGroup, entry.Tags[i].Entries.Where(x => x.Index == mapIndex));
+
+                        srtGroup.Name = entry.Tags[i].Type;
+                        if (mapIndices.Count > 1)
+                            srtGroup.Name += $" (Texture {mapIndex})";
+                        SubAnimGroups.Add(srtGroup);
+                    }
+                    continue;
+                }
+
                 switch (tag)
                 {
                     case "LPA":
@@ -114,32 +137,37 @@ namespace LayoutBXLYT
                         break;
                 }
 
-                foreach (var keyGroup in entry.Tags[i].Entries)
-                {
-                    if (!(group is IAnimationTarget))
-                        continue;
-
-                    var targetGroup = ((IAnimationTarget)group).GetTrack(keyGroup.AnimationTarget);
-                    if (group is LytMaterialColorGroup)
-                        Console.WriteLine($"targetGroup {(RevLMCTarget)keyGroup.AnimationTarget} {targetGroup != null}");
-                    if (targetGroup != null)
-                    {
-                        targetGroup.LoadKeyFrames(keyGroup.KeyFrames);
-                        targetGroup.Name = keyGroup.TargetName;
-
-                        if (keyGroup.CurveType == CurveType.Constant)
-                            targetGroup.InterpolationType = STInterpoaltionType.Constant;
-                        else if (keyGroup.CurveType == CurveType.Hermite)
-                            targetGroup.InterpolationType = STInterpoaltionType.Hermite;
-                        else if (keyGroup.CurveType == CurveType.Step)
-                            targetGroup.InterpolationType = STInterpoaltionType.Step;
-                    }
-                    else
-                        Console.WriteLine($"Unsupported track type for tag {keyGroup.TargetName} {keyGroup.AnimationTarget}");
-                }
+                LoadKeyGroups(group, entry.Tags[i].Entries);
 
                 group.Name = entry.Tags[i].Type;
                 SubAnimGroups.Add(group);
+            }
+        }
+
+        private void LoadKeyGroups(STAnimGroup group, IEnumerable<BxlanPaiTagEntry> keyGroups)
+        {
+            foreach (var keyGroup in keyGroups)
+            {
+                if (!(group is IAnimationTarget))
+                    continue;
+
+                var targetGroup = ((IAnimationTarget)group).GetTrack(keyGroup.AnimationTarget);
+                if (group is LytMaterialColorGroup)
+                    Console.WriteLine($"targetGroup {(RevLMCTarget)keyGroup.AnimationTarget} {targetGroup != null}");
+                if (targetGroup != null)
+                {
+                    targetGroup.LoadKeyFrames(keyGroup.KeyFrames);
+                    targetGroup.Name = keyGroup.TargetName;
+
+                    if (keyGroup.CurveType == CurveType.Constant)
+                        targetGroup.InterpolationType = STInterpoaltionType.Constant;
+                    else if (keyGroup.CurveType == CurveType.Hermite)
+                        targetGroup.InterpolationType = STInterpoaltionType.Hermite;
+                    else if (keyGroup.CurveType == CurveType.Step)
+                        targetGroup.InterpolationType = STInterpoaltionType.Step;
+                }
+                else
+                    Console.WriteLine($"Unsupported track type for tag {keyGroup.TargetName} {keyGroup.AnimationTarget}");
             }
         }
     }
@@ -456,6 +484,9 @@ namespace LayoutBXLYT
 
     public class LytTextureSRTGroup : SubAnimGroup, IAnimationTarget
     {
+        //The texture map these tracks animate
+        public int MapIndex = 0;
+
         public LytAnimTrack TranslateU = new LytAnimTrack();
         public LytAnimTrack TranslateV = new LytAnimTrack();
         public LytAnimTrack Rotate = new LytAnimTrack();
