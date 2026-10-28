@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -281,6 +281,16 @@ namespace LayoutBXLYT
                     var value = track.GetFrameValue(Frame, StartFrame);
                     var target = (LTSTarget)i;
 
+                    //Values for this texture map only
+                    Dictionary<LTSTarget, float> mapValues;
+                    if (!mat.animController.TextureSRTSByMap.TryGetValue(group.MapIndex, out mapValues))
+                    {
+                        mapValues = new Dictionary<LTSTarget, float>();
+                        mat.animController.TextureSRTSByMap.Add(group.MapIndex, mapValues);
+                    }
+                    mapValues[target] = value;
+
+                    //Kept for code that does not use the texture map index
                     if (!mat.animController.TextureSRTS.ContainsKey(target))
                         mat.animController.TextureSRTS.Add(target, value);
                     else
