@@ -187,7 +187,9 @@ namespace LayoutBXLYT
                         translate.X / scale.X - 0.5f,
                         translate.Y / scale.Y - 0.5f, 0);
 
-                    matTransform = matRotate * matTranslate * matScale;
+                    //Center the UVs, scale, then rotate (same order as Every File Explorer),
+                    //so the texture rotates around its center. The shader adds the 0.5 back afterwards.
+                    matTransform = matTranslate * matScale * matRotate;
                 }
                 SetMatrix("textureTransform" + i, ref matTransform);
 
