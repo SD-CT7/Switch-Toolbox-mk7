@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -207,9 +207,36 @@ namespace LayoutBXLYT
             return Textures;
         }
 
+        //Finds an animation that is already loaded (by file name)
+        private BxlanHeader FindAnimationFile(string fileName)
+        {
+            string name = System.IO.Path.GetFileName(fileName);
+            foreach (var anim in AnimationFiles)
+            {
+                if (System.IO.Path.GetFileName(anim.FileName) == name)
+                    return anim;
+            }
+            return null;
+        }
+
+        //Adds an animation, or replaces the one with the same file name so it is never listed twice
+        private void AddAnimationFile(BxlanHeader header)
+        {
+            string name = System.IO.Path.GetFileName(header.FileName);
+            for (int i = 0; i < AnimationFiles.Count; i++)
+            {
+                if (System.IO.Path.GetFileName(AnimationFiles[i].FileName) == name)
+                {
+                    AnimationFiles[i] = header;
+                    return;
+                }
+            }
+            AnimationFiles.Add(header);
+        }
+
         public void LoadBxlan(BxlanHeader header)
         {
-            AnimationFiles.Add(header);
+            AddAnimationFile(header);
             ActiveAnimation = header;
 
             ShowAnimationHierarchy();
@@ -407,6 +434,15 @@ namespace LayoutBXLYT
         private void UpdateAnimationNode(ListViewItem node)
         {
             var archiveNode = node.Tag as ArchiveFileInfo;
+
+            //Already opened (for example from the file tree). Use that one instead of opening the file again
+            var opened = FindAnimationFile(archiveNode.FileName);
+            if (opened != null)
+            {
+                node.Tag = opened;
+                return;
+            }
+
             var fileFormat = archiveNode.OpenFile();
             if (archiveNode.FileWrapper != null)
                 fileFormat.IFileInfo.ArchiveParent = archiveNode.FileWrapper.ArchiveFile;
@@ -419,7 +455,7 @@ namespace LayoutBXLYT
             if (fileFormat != null && fileFormat is BXLAN)
             {
                 node.Tag = ((BXLAN)fileFormat).BxlanHeader;
-                AnimationFiles.Add(((BXLAN)fileFormat).BxlanHeader);
+                AddAnimationFile(((BXLAN)fileFormat).BxlanHeader);
             }
         }
 
