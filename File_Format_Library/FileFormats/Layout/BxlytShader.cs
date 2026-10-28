@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
@@ -318,7 +318,9 @@ namespace LayoutBXLYT
                         translate.X / scale.X - 0.5f,
                         translate.Y / scale.Y - 0.5f, 0);
 
-                    Matrix4 matTransform = matRotate * matTranslate * matScale;
+                    //Center the UVs, scale, then rotate (same order as Every File Explorer),
+                    //so the texture rotates around its center. The shader adds the 0.5 back afterwards.
+                    Matrix4 matTransform = matTranslate * matScale * matRotate;
                     shader.SetMatrix(String.Format("textureTransforms[{0}]", i), ref matTransform);
 
                     id++;
