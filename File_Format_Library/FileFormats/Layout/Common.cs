@@ -2582,6 +2582,24 @@ namespace LayoutBXLYT
         public Dictionary<LMCTarget, float> MaterialColors = new Dictionary<LMCTarget, float>();
         public Dictionary<LTPTarget, string> TexturePatterns = new Dictionary<LTPTarget, string>();
         public Dictionary<LTSTarget, float> TextureSRTS = new Dictionary<LTSTarget, float>();
+
+        //Texture SRT values for each texture map (the animation entries store the map index)
+        public Dictionary<int, Dictionary<LTSTarget, float>> TextureSRTSByMap = new Dictionary<int, Dictionary<LTSTarget, float>>();
+
+        //Texture SRT values that apply to one texture map
+        public IEnumerable<KeyValuePair<LTSTarget, float>> GetTextureSRTS(int mapIndex)
+        {
+            if (TextureSRTSByMap.Count > 0)
+            {
+                Dictionary<LTSTarget, float> values;
+                if (TextureSRTSByMap.TryGetValue(mapIndex, out values))
+                    return values;
+
+                //The animation is for other texture maps only
+                return new KeyValuePair<LTSTarget, float>[0];
+            }
+            return TextureSRTS;
+        }
         public Dictionary<LIMTarget, float> IndTextureSRTS = new Dictionary<LIMTarget, float>();
 
         public void ResetAnim()
@@ -2589,6 +2607,7 @@ namespace LayoutBXLYT
             MaterialColors.Clear();
             TexturePatterns.Clear();
             TextureSRTS.Clear();
+            TextureSRTSByMap.Clear();
             IndTextureSRTS.Clear();
         }
     }
