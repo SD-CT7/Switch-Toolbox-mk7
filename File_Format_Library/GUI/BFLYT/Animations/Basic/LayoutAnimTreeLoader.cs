@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -154,10 +154,25 @@ namespace LayoutBXLYT
             if (dlg.ShowDialog() == DialogResult.OK && canLoad)
             {
                 BxlanPaiTagEntry target = dlg.GetGroupTarget();
-                target.Index = (byte)GroupTag.Entries.Count;
+                string targetText = target.TargetName;
+
+                string tagType = GroupTag.Tag != null && GroupTag.Tag.Length > 1 ? GroupTag.Tag.Remove(0, 1) : "";
+                if (tagType == "LTS")
+                {
+                    //Texture SRT: the id is the texture map. Start with the first one
+                    target.Index = 0;
+                }
+                else if (tagType == "LTP")
+                {
+                    //Texture pattern: the id is the texture map and the target is always 0
+                    target.Index = target.AnimationTarget;
+                    target.AnimationTarget = 0;
+                }
+                else
+                    target.Index = (byte)GroupTag.Entries.Count;
                 GroupTag.Entries.Add(target);
 
-                var nodeEntry = new GroupTargetWrapper(target.TargetName) { Tag = target };
+                var nodeEntry = new GroupTargetWrapper(targetText) { Tag = target };
                 Nodes.Add(nodeEntry);
             }
         }
