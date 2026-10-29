@@ -250,24 +250,26 @@ namespace LayoutBXLYT
 
         private void LoadTexturePatternGroup(BxlytMaterial mat, LytTexturePatternGroup group)
         {
-            for (int i = 0; i < 1; i++)
+            //Every group holds the pattern of one texture map. Use the first track that has keys.
+            LytAnimTrack track = null;
+            for (int i = 0; i < 3; i++)
             {
                 if (group.GetTrack(i).HasKeys)
                 {
-                    var track = group.GetTrack(i);
-                    var value = track.GetFrameValue(Frame, StartFrame);
-                    var target = (LTPTarget)i;
-
-                    if (Textures.Count > value && value >= 0)
-                    {
-                        string texName = Textures[(int)value];
-
-                        if (!mat.animController.TexturePatterns.ContainsKey(target))
-                            mat.animController.TexturePatterns.Add(target, texName);
-                        else
-                            mat.animController.TexturePatterns[target] = texName;
-                    }
+                    track = group.GetTrack(i);
+                    break;
                 }
+            }
+            if (track == null)
+                return;
+
+            var value = track.GetFrameValue(Frame, StartFrame);
+            var target = (LTPTarget)Math.Min(group.MapIndex, 2);
+
+            if (Textures.Count > value && value >= 0)
+            {
+                string texName = Textures[(int)value];
+                mat.animController.TexturePatterns[target] = texName;
             }
         }
 
