@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -52,14 +52,27 @@ namespace LayoutBXLYT
         private void ReloadAlphaCompareValues(BxlytMaterial material)
         {
             loaded = false;
-            if (material.AlphaCompare != null && material.EnableAlphaCompare)
+            try
             {
-                alphaSourcCB.Bind(typeof(GfxAlphaFunction), material.AlphaCompare, "CompareMode");
-                alphaValueUD.Value = material.AlphaCompare.Value;
+                if (material.AlphaCompare != null && material.EnableAlphaCompare)
+                {
+                    alphaSourcCB.Bind(typeof(GfxAlphaFunction), material.AlphaCompare, "CompareMode");
 
-                alphaSourcCB.SelectedItem = material.AlphaCompare.CompareMode;
+                    //Damaged files can hold a value that is not a number or far outside the slider range
+                    //and the slider throws an exception for those, so keep the value inside the range
+                    float alphaValue = material.AlphaCompare.Value;
+                    if (float.IsNaN(alphaValue) || float.IsInfinity(alphaValue))
+                        alphaValue = 0;
+                    alphaValue = System.Math.Max(alphaValueUD.Minimum, System.Math.Min(alphaValueUD.Maximum, alphaValue));
+                    alphaValueUD.Value = alphaValue;
+
+                    alphaSourcCB.SelectedItem = material.AlphaCompare.CompareMode;
+                }
             }
-            loaded = true;
+            finally
+            {
+                loaded = true;
+            }
         }
 
         private void ReloadColorValues(BxlytMaterial material)
