@@ -103,6 +103,28 @@ namespace LayoutBXLYT
                     continue;
                 }
 
+                //Texture pattern entries store which texture map they change.
+                //Keep one group per texture map so every map gets its own pattern, not only the first one.
+                if (tag == "LTP")
+                {
+                    var patternMaps = entry.Tags[i].Entries.Select(x => GetPatternMap(x)).Distinct().OrderBy(x => x).ToList();
+                    if (patternMaps.Count == 0)
+                        patternMaps.Add(0);
+
+                    foreach (int mapIndex in patternMaps)
+                    {
+                        var patternGroup = new LytTexturePatternGroup(entry.Tags[i]);
+                        patternGroup.MapIndex = mapIndex;
+                        LoadKeyGroups(patternGroup, entry.Tags[i].Entries.Where(x => GetPatternMap(x) == mapIndex));
+
+                        patternGroup.Name = entry.Tags[i].Type;
+                        if (patternMaps.Count > 1)
+                            patternGroup.Name += $" (Texture {mapIndex})";
+                        SubAnimGroups.Add(patternGroup);
+                    }
+                    continue;
+                }
+
                 switch (tag)
                 {
                     case "LPA":
@@ -142,6 +164,13 @@ namespace LayoutBXLYT
                 group.Name = entry.Tags[i].Type;
                 SubAnimGroups.Add(group);
             }
+        }
+
+        //The texture map a texture pattern entry changes. Game files store it in the id of the entry
+        //(the target is 0), files made with the target list of the editor store it in the target.
+        private static int GetPatternMap(BxlanPaiTagEntry entry)
+        {
+            return entry.Index != 0 ? entry.Index : entry.AnimationTarget;
         }
 
         private void LoadKeyGroups(STAnimGroup group, IEnumerable<BxlanPaiTagEntry> keyGroups)
@@ -257,6 +286,9 @@ namespace LayoutBXLYT
 
     public class LytTexturePatternGroup : SubAnimGroup, IAnimationTarget
     {
+        //The texture map this pattern changes
+        public int MapIndex = 0;
+
         public LytAnimTrack Tex0AnimTrack = new LytAnimTrack();
         public LytAnimTrack Tex1AnimTrack = new LytAnimTrack();
         public LytAnimTrack Tex2AnimTrack = new LytAnimTrack();
