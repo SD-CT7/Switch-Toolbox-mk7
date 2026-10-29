@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -46,6 +46,8 @@ namespace FirstPlugin
             switch (Format)
             {
                 case TEX_FORMAT.A8_UNORM: return BCLIMFormat.L8_UNORM;
+                case TEX_FORMAT.L4: return BCLIMFormat.L4_UNORM;
+                case TEX_FORMAT.A4: return BCLIMFormat.A4_UNORM;
                 case TEX_FORMAT.R8G8_UNORM: return BCLIMFormat.LA8;
                 case TEX_FORMAT.B5G6R5_UNORM: return BCLIMFormat.RGB565;
                 case TEX_FORMAT.R8G8B8A8_UNORM: return BCLIMFormat.RGBA8;
@@ -327,6 +329,10 @@ namespace FirstPlugin
                     return TEX_FORMAT.ETC1_UNORM;
                 case BCLIMFormat.ETC1A4:
                     return TEX_FORMAT.ETC1_A4;
+                case BCLIMFormat.L4_UNORM:
+                    return TEX_FORMAT.L4;
+                case BCLIMFormat.A4_UNORM:
+                    return TEX_FORMAT.A4;
                 case BCLIMFormat.RGB565:
                     return TEX_FORMAT.B5G6R5_UNORM;
                 case BCLIMFormat.RGBX8:
@@ -374,14 +380,14 @@ namespace FirstPlugin
             RGBA8 = 9,
             ETC1 = 10,
             ETC1A4 = 11,
+            L4_UNORM = 12, //3DS formats 12 and 13 (they used to be listed after the BC formats)
+            A4_UNORM = 13,
             BC1_UNORM,
             BC2_UNORM,
             BC3_UNORM,
             BC4L_UNORM,
             BC4A_UNORM,
             BC5_UNORM,
-            L4_UNORM,
-            A4_UNORM,
             RGBA8_SRGB,
             BC1_SRGB,
             BC2_SRGB,
