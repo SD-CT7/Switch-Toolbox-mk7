@@ -60,6 +60,10 @@ namespace LayoutBXLYT
 
             Text = $"Switch Toolbox Layout Editor";
 
+            var editAnimTexturesMenu = new ToolStripMenuItem("Edit Animation Texture List...");
+            editAnimTexturesMenu.Click += EditAnimationTextureListClick;
+            animationToolStripMenuItem.DropDownItems.Add(editAnimTexturesMenu);
+
             chkAutoKey.Enabled = false;
             chkAutoKey.ForeColor = FormThemes.BaseTheme.FormForeColor;
 
@@ -205,6 +209,88 @@ namespace LayoutBXLYT
         public Dictionary<string, STGenericTexture> GetTextures()
         {
             return Textures;
+        }
+
+        //Edits the texture name list of the active animation (the list texture pattern keys point to)
+        private void EditAnimationTextureListClick(object sender, EventArgs e)
+        {
+            if (ActiveAnimation == null || ActiveAnimation.AnimationInfo == null)
+            {
+                MessageBox.Show("Open an animation first.");
+                return;
+            }
+
+            var info = ActiveAnimation.AnimationInfo;
+            var oldNames = info.Textures != null ? new List<string>(info.Textures) : new List<string>();
+
+            using (var dialog = new AnimationTextureListDialog(oldNames, Textures.Keys,
+                (original) => CountTexturePatternKeys(info, original)))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                //Keys store the position in the list so they have to follow the names that moved
+                RemapTexturePatternKeys(info, dialog.OriginalIndices);
+                info.Textures = new List<string>(dialog.Names);
+
+                var generic = ActiveAnimation.GetGenericAnimation();
+                if (generic != null)
+                {
+                    generic.Textures.Clear();
+                    generic.Textures.AddRange(info.Textures);
+                }
+
+                MessageBox.Show("The texture list was updated. Use Save Animation to write the changes.");
+            }
+        }
+
+        private static IEnumerable<KeyFrame> GetTexturePatternKeys(BxlanPAI1 info)
+        {
+            foreach (var paiEntry in info.Entries)
+            {
+                foreach (var tag in paiEntry.Tags)
+                {
+                    if (tag.Tag == null || !tag.Tag.EndsWith("LTP"))
+                        continue;
+
+                    foreach (var tagEntry in tag.Entries)
+                    {
+                        foreach (var key in tagEntry.KeyFrames)
+                            yield return key;
+                    }
+                }
+            }
+        }
+
+        //How many texture pattern keys use the texture at this position of the list
+        private static int CountTexturePatternKeys(BxlanPAI1 info, int originalIndex)
+        {
+            int count = 0;
+            foreach (var key in GetTexturePatternKeys(info))
+            {
+                if ((int)Math.Round(key.Value) == originalIndex)
+                    count++;
+            }
+            return count;
+        }
+
+        //originalIndices[newPosition] is where that name was before (-1 if it was added)
+        private static void RemapTexturePatternKeys(BxlanPAI1 info, List<int> originalIndices)
+        {
+            var newPosition = new Dictionary<int, int>();
+            for (int i = 0; i < originalIndices.Count; i++)
+            {
+                if (originalIndices[i] >= 0)
+                    newPosition[originalIndices[i]] = i;
+            }
+
+            foreach (var key in GetTexturePatternKeys(info))
+            {
+                int oldIndex = (int)Math.Round(key.Value);
+                int position;
+                //Textures that were removed fall back to the first texture
+                key.Value = newPosition.TryGetValue(oldIndex, out position) ? position : 0;
+            }
         }
 
         //Finds an animation that is already loaded (by file name)
@@ -1348,6 +1434,159 @@ namespace LayoutBXLYT
         private void saveWorkspaceToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
+        }
+    }
+
+    //Edits the texture name list of an animation (pai1).
+    //Texture pattern keys store a position in this list, so removing or moving names changes what they point to.
+    public class AnimationTextureListDialog : Form
+    {
+        private ListBox listBox;
+        private ComboBox nameBox;
+        private Button addButton, renameButton, removeButton, upButton, downButton, okButton, cancelButton;
+        private Label infoLabel;
+
+        private List<string> names;
+        //Where each name was in the original list (-1 for names that were added)
+        private List<int> originalIndices = new List<int>();
+        private Func<int, int> countReferences;
+
+        public List<string> Names { get { return names; } }
+        public List<int> OriginalIndices { get { return originalIndices; } }
+
+        public AnimationTextureListDialog(List<string> textureNames, IEnumerable<string> availableTextures,
+            Func<int, int> countReferences)
+        {
+            this.names = new List<string>(textureNames);
+            this.countReferences = countReferences;
+            for (int i = 0; i < names.Count; i++)
+                originalIndices.Add(i);
+
+            Text = "Animation Texture List";
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            StartPosition = FormStartPosition.CenterParent;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            ClientSize = new Size(470, 400);
+
+            infoLabel = new Label();
+            infoLabel.Text = "Texture pattern keys use the number in front of each name.";
+            infoLabel.SetBounds(10, 8, 450, 20);
+
+            listBox = new ListBox();
+            listBox.SetBounds(10, 32, 350, 270);
+            listBox.SelectedIndexChanged += (s, e) =>
+            {
+                if (listBox.SelectedIndex >= 0)
+                    nameBox.Text = names[listBox.SelectedIndex];
+            };
+
+            nameBox = new ComboBox();
+            nameBox.DropDownStyle = ComboBoxStyle.DropDown;
+            nameBox.SetBounds(10, 312, 350, 24);
+            if (availableTextures != null)
+            {
+                foreach (var texture in availableTextures)
+                    nameBox.Items.Add(texture);
+            }
+
+            addButton = MakeButton("Add", 370, 32, (s, e) => AddName());
+            renameButton = MakeButton("Rename", 370, 66, (s, e) => RenameName());
+            removeButton = MakeButton("Remove", 370, 100, (s, e) => RemoveName());
+            upButton = MakeButton("Move Up", 370, 150, (s, e) => MoveName(-1));
+            downButton = MakeButton("Move Down", 370, 184, (s, e) => MoveName(1));
+
+            okButton = MakeButton("OK", 290, 360, null);
+            okButton.DialogResult = DialogResult.OK;
+            cancelButton = MakeButton("Cancel", 380, 360, null);
+            cancelButton.DialogResult = DialogResult.Cancel;
+            AcceptButton = okButton;
+            CancelButton = cancelButton;
+
+            Controls.AddRange(new Control[] { infoLabel, listBox, nameBox, addButton, renameButton,
+                removeButton, upButton, downButton, okButton, cancelButton });
+
+            RefreshList(names.Count > 0 ? 0 : -1);
+        }
+
+        private Button MakeButton(string text, int x, int y, EventHandler click)
+        {
+            var button = new Button();
+            button.Text = text;
+            button.SetBounds(x, y, 90, 28);
+            if (click != null)
+                button.Click += click;
+            return button;
+        }
+
+        private void RefreshList(int select)
+        {
+            listBox.Items.Clear();
+            for (int i = 0; i < names.Count; i++)
+                listBox.Items.Add(i + ": " + names[i]);
+
+            if (select >= 0 && select < names.Count)
+                listBox.SelectedIndex = select;
+        }
+
+        private void AddName()
+        {
+            string name = nameBox.Text.Trim();
+            if (name.Length == 0)
+                return;
+
+            names.Add(name);
+            originalIndices.Add(-1);
+            RefreshList(names.Count - 1);
+        }
+
+        private void RenameName()
+        {
+            int index = listBox.SelectedIndex;
+            string name = nameBox.Text.Trim();
+            if (index < 0 || name.Length == 0)
+                return;
+
+            names[index] = name;
+            RefreshList(index);
+        }
+
+        private void RemoveName()
+        {
+            int index = listBox.SelectedIndex;
+            if (index < 0)
+                return;
+
+            int uses = originalIndices[index] >= 0 ? countReferences(originalIndices[index]) : 0;
+            if (uses > 0)
+            {
+                var result = MessageBox.Show(uses + " key frame(s) use this texture. They will use the first texture instead. Remove it?",
+                    "Remove texture", MessageBoxButtons.YesNo);
+                if (result != DialogResult.Yes)
+                    return;
+            }
+
+            names.RemoveAt(index);
+            originalIndices.RemoveAt(index);
+            RefreshList(Math.Min(index, names.Count - 1));
+        }
+
+        private void MoveName(int direction)
+        {
+            int index = listBox.SelectedIndex;
+            int target = index + direction;
+            if (index < 0 || target < 0 || target >= names.Count)
+                return;
+
+            string name = names[index];
+            names[index] = names[target];
+            names[target] = name;
+
+            int original = originalIndices[index];
+            originalIndices[index] = originalIndices[target];
+            originalIndices[target] = original;
+
+            RefreshList(target);
         }
     }
 }
