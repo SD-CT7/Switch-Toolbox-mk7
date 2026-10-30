@@ -16,6 +16,33 @@ namespace LayoutBXLYT
             LoadShaders();
         }
         
+        //The white and black color of a material with the MaterialColor animation applied.
+        //The animation values are 0 - 255 per channel.
+        public static void GetAnimatedMaterialColors(CTR.Material material, out Color whiteColor, out Color blackColor)
+        {
+            int[] white = new int[] { material.WhiteColor.R, material.WhiteColor.G, material.WhiteColor.B, material.WhiteColor.A };
+            int[] black = new int[] { material.BlackColor.R, material.BlackColor.G, material.BlackColor.B, material.BlackColor.A };
+
+            foreach (var animItem in material.animController.MaterialColors)
+            {
+                int value = Math.Max(0, Math.Min(255, (int)Math.Round(animItem.Value)));
+                switch (animItem.Key)
+                {
+                    case LMCTarget.BlackColorRed: black[0] = value; break;
+                    case LMCTarget.BlackColorGreen: black[1] = value; break;
+                    case LMCTarget.BlackColorBlue: black[2] = value; break;
+                    case LMCTarget.BlackColorAlpha: black[3] = value; break;
+                    case LMCTarget.WhiteColorRed: white[0] = value; break;
+                    case LMCTarget.WhiteColorGreen: white[1] = value; break;
+                    case LMCTarget.WhiteColorBlue: white[2] = value; break;
+                    case LMCTarget.WhiteColorAlpha: white[3] = value; break;
+                }
+            }
+
+            whiteColor = Color.FromArgb(white[3], white[0], white[1], white[2]);
+            blackColor = Color.FromArgb(black[3], black[0], black[1], black[2]);
+        }
+
         public override void OnCompiled()
         {
             SetColor("whiteColor", Color.FromArgb(255, 255, 255, 255));
@@ -50,8 +77,11 @@ namespace LayoutBXLYT
 
             shader.SetMatrix("rotationMatrix", ref rotationMatrix);
 
-            shader.SetColor("whiteColor", material.WhiteColor.Color);
-            shader.SetColor("blackColor", material.BlackColor.Color);
+            //Use the colors of the MaterialColor animation (BCLAN CLMC) if there is one
+            Color whiteColor, blackColor;
+            GetAnimatedMaterialColors(material, out whiteColor, out blackColor);
+            shader.SetColor("whiteColor", whiteColor);
+            shader.SetColor("blackColor", blackColor);
             shader.SetInt("debugShading", (int)Runtime.LayoutEditor.Shading);
             shader.SetInt("numTextureMaps", material.TextureMaps.Length);
             shader.SetVec2("uvScale0", new Vector2(1, 1));
@@ -140,8 +170,10 @@ namespace LayoutBXLYT
         public void SetTevUniforms(CTR.Material material)
         {
             //Buffer color ("Register" source) and the 6 constant colors
-            SetColor("colorreg", material.BlackColor.Color);
-            SetColor("const0", material.WhiteColor.Color);
+            Color animatedWhite, animatedBlack;
+            BclytShader.GetAnimatedMaterialColors(material, out animatedWhite, out animatedBlack);
+            SetColor("colorreg", animatedBlack);
+            SetColor("const0", animatedWhite);
             for (int i = 0; i < 5; i++)
             {
                 Color constColor = Color.White;
