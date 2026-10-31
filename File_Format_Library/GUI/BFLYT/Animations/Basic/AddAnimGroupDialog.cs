@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -41,13 +41,13 @@ namespace LayoutBXLYT
                 if ((AnimationTarget)typeCB.SelectedItem == AnimationTarget.Pane)
                 {
                     foreach (var pane in ParentLayout.PaneLookup.Keys)
-                        if (!AnimInfo.ContainsEntry(pane))
+                        if (!AnimInfo.ContainsEntry(pane, AnimationTarget.Pane))
                             objectTargetsCB.Items.Add(pane);
                 }
                 else if ((AnimationTarget)typeCB.SelectedItem == AnimationTarget.Material)
                 {
                     foreach (var mat in ParentLayout.Materials)
-                        if (!AnimInfo.ContainsEntry(mat.Name))
+                        if (!AnimInfo.ContainsEntry(mat.Name, AnimationTarget.Material))
                             objectTargetsCB.Items.Add(mat.Name);
                 }
 
