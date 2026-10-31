@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -25,12 +25,13 @@ namespace LayoutBXLYT
             {
                 stComboBox1.Items.Add("PaneSRT");
                 stComboBox1.Items.Add("Visibility");
-                stComboBox1.Items.Add("TextureSRT");
                 stComboBox1.Items.Add("VertexColor");
             }
             else
             {
                 stComboBox1.Items.Add("MaterialColor");
+                //The texture SRT animation is played on the material (LoadMaterialAnimation)
+                stComboBox1.Items.Add("TextureSRT");
                 stComboBox1.Items.Add("TexturePattern");
                 stComboBox1.Items.Add("IndTextureSRT");
                 stComboBox1.Items.Add("AlphaTest");
