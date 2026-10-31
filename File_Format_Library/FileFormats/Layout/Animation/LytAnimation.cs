@@ -227,6 +227,7 @@ namespace LayoutBXLYT
                 var track = group.AnimTrack;
                 var value = track.GetFrameValue(Frame, StartFrame);
                 pane.animController.Visibile = value == 1 ? true : false;
+                pane.animController.VisibilityAnimated = true;
             }
         }
 
