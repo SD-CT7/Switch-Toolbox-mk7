@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -482,11 +482,14 @@ namespace LayoutBXLYT
 
             parentAlphaInfluence = parentAlphaInfluence || pane.InfluenceAlpha;
 
+            //A visibility animation can hide a pane (and its children) that is visible in the file
+            bool hiddenByAnimation = !isRoot && pane.animController.VisibilityAnimated && !pane.animController.Visibile;
+
             if (!isRoot)
             {
                 bool isSelected = SelectedPanes.Contains(pane);
 
-                if (!pane.Visible && !pane.animController.Visibile)
+                if (hiddenByAnimation || (!pane.Visible && !pane.animController.Visibile))
                     DrawDefaultPane(shader, pane, isSelected);
                 else if (pane is IPicturePane)
                     BxlytToGL.DrawPictureBox(pane, Camera, GameWindow, effectiveAlpha, Textures, isSelected);
@@ -528,8 +531,11 @@ namespace LayoutBXLYT
                 isRoot = false;
 
             byte childAlpha = pane.InfluenceAlpha || parentAlphaInfluence ? effectiveAlpha : byte.MaxValue;
-            foreach (var childPane in pane.Childern)
-                RenderPanes(shader, childPane, isRoot, childAlpha, parentAlphaInfluence, partPane);
+            if (!hiddenByAnimation)
+            {
+                foreach (var childPane in pane.Childern)
+                    RenderPanes(shader, childPane, isRoot, childAlpha, parentAlphaInfluence, partPane);
+            }
 
             GL.PopMatrix();
         }
