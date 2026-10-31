@@ -688,9 +688,13 @@ namespace LayoutBXLYT
         public Dictionary<LVCTarget, float> PaneVertexColors = new Dictionary<LVCTarget, float>();
         public bool Visibile = true;
 
+        //True while a visibility animation (BCLAN CLVI) controls this pane
+        public bool VisibilityAnimated = false;
+
         public void ResetAnim()
         {
             Visibile = true;
+            VisibilityAnimated = false;
             PaneSRT.Clear();
             PaneVertexColors.Clear();
         }
