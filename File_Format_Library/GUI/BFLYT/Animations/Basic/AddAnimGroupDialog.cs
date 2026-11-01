@@ -41,13 +41,13 @@ namespace LayoutBXLYT
                 if ((AnimationTarget)typeCB.SelectedItem == AnimationTarget.Pane)
                 {
                     foreach (var pane in ParentLayout.PaneLookup.Keys)
-                        if (!AnimInfo.ContainsEntry(pane, AnimationTarget.Pane))
+                        if (!AnimInfo.Entries.Any(x => x.Name == pane && x.Target == AnimationTarget.Pane))
                             objectTargetsCB.Items.Add(pane);
                 }
                 else if ((AnimationTarget)typeCB.SelectedItem == AnimationTarget.Material)
                 {
                     foreach (var mat in ParentLayout.Materials)
-                        if (!AnimInfo.ContainsEntry(mat.Name, AnimationTarget.Material))
+                        if (!AnimInfo.Entries.Any(x => x.Name == mat.Name && x.Target == AnimationTarget.Material))
                             objectTargetsCB.Items.Add(mat.Name);
                 }
 
