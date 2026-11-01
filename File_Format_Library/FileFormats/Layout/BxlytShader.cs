@@ -247,6 +247,63 @@ namespace LayoutBXLYT
             GL.LogicOp(LogicOp.Noop);
         }
 
+        //Names of textures that are not in the layout or the archive, so they are only searched once
+        private static HashSet<string> missingPatternTextures = new HashSet<string>();
+
+        //Finds the texture that a texture pattern animation switches to.
+        //The layout only lists the first texture of a material, so the other textures are
+        //looked up in the archive that is open (same file name, ignoring case, folder and extension).
+        public static string ResolvePatternTexture(BxlytMaterial material, string name,
+            Dictionary<string, STGenericTexture> textures)
+        {
+            if (string.IsNullOrEmpty(name) || textures.ContainsKey(name))
+                return name;
+
+            string fileName = System.IO.Path.GetFileName(name);
+
+            //Already loaded under a slightly different name
+            foreach (var key in textures.Keys)
+            {
+                if (string.Equals(System.IO.Path.GetFileName(key), fileName, StringComparison.OrdinalIgnoreCase))
+                    return key;
+            }
+
+            //Not loaded yet. Look for the file in the archive that is open
+            var archive = material.ParentLayout?.FileInfo?.IFileInfo?.ArchiveParent;
+            if (archive == null)
+                return name;
+
+            string missingKey = archive.GetHashCode() + "|" + fileName.ToLower();
+            if (missingPatternTextures.Contains(missingKey))
+                return name;
+
+            foreach (var file in archive.Files)
+            {
+                string archiveName = System.IO.Path.GetFileName(file.FileName);
+                bool isMatch = string.Equals(archiveName, fileName, StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(archiveName, fileName + ".bclim", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(archiveName, fileName + ".bflim", StringComparison.OrdinalIgnoreCase);
+                if (!isMatch)
+                    continue;
+
+                var fileFormat = file.FileFormat;
+                if (fileFormat == null)
+                    fileFormat = file.OpenFile();
+
+                var texture = fileFormat as STGenericTexture;
+                if (texture != null)
+                {
+                    file.FileFormat = fileFormat;
+                    textures[name] = texture; //found next time without searching
+                    return name;
+                }
+            }
+
+            Console.WriteLine("Texture pattern texture not found in the archive: " + name);
+            missingPatternTextures.Add(missingKey);
+            return name;
+        }
+
         public static void LoadTextureUniforms(BxlytShader shader, BxlytMaterial material,
              Dictionary<string, STGenericTexture> textures)
         {
@@ -275,7 +332,7 @@ namespace LayoutBXLYT
                 string TexName = material.TextureMaps[i].Name;
 
                 if (material.animController.TexturePatterns.ContainsKey((LTPTarget)i))
-                    TexName = material.animController.TexturePatterns[(LTPTarget)i];
+                    TexName = ResolvePatternTexture(material, material.animController.TexturePatterns[(LTPTarget)i], textures);
 
                 if (textures.ContainsKey(TexName))
                 {
