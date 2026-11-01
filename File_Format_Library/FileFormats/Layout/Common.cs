@@ -1861,6 +1861,12 @@ namespace LayoutBXLYT
             return Entries.Any(x => x.Name == name);
         }
 
+        //A pane and a material can have the same name, so the kind has to match too
+        public bool ContainsEntry(string name, AnimationTarget target)
+        {
+            return Entries.Any(x => x.Name == name && x.Target == target);
+        }
+
         public virtual BxlanPaiEntry AddEntry(string name, byte target)
         {
             return new BxlanPaiEntry();
