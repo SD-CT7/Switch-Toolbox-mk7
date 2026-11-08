@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -99,8 +99,36 @@ namespace Toolbox.Library
             return DecodeBlock(Input, Width, Height, ConvertToPICAFormat(Format));
         }
 
+        //Smallest power of two (at least 8) that holds the size
+        private static int NextPowerOfTwo(int value)
+        {
+            int size = 8;
+            while (size < value)
+                size <<= 1;
+            return size;
+        }
+
         public static byte[] DecodeBlock(byte[] Input, int Width, int Height, PICASurfaceFormat picaFormat)
         {
+            //3DS textures are stored in power of two sizes (at least 8) while the header has the real size.
+            //When the data holds the padded size, decode that size and cut out the real image.
+            //Otherwise the tiles end up in the wrong place (images like 22 x 22 look scrambled).
+            if (Width > 0 && Height > 0)
+            {
+                int paddedWidth = NextPowerOfTwo(Width);
+                int paddedHeight = NextPowerOfTwo(Height);
+                long paddedSize = (long)paddedWidth * paddedHeight * FmtBPP[(int)picaFormat] / 8;
+
+                if ((paddedWidth != Width || paddedHeight != Height) && Input.Length >= paddedSize)
+                {
+                    byte[] full = DecodeBlock(Input, paddedWidth, paddedHeight, picaFormat);
+                    byte[] cropped = new byte[Width * Height * 4];
+                    for (int y = 0; y < Height; y++)
+                        System.Buffer.BlockCopy(full, y * paddedWidth * 4, cropped, y * Width * 4, Width * 4);
+                    return cropped;
+                }
+            }
+
             if (picaFormat == PICASurfaceFormat.ETC1 || picaFormat == PICASurfaceFormat.ETC1A4)
                 return FlipVertical(Width, Height, ETC1.ETC1Decompress(Input, Width, Height, picaFormat == PICASurfaceFormat.ETC1A4));
 
